@@ -50,7 +50,7 @@ brews:
     dependencies:
       - name: go
 dockers:
-  - image_templates: [ "jackstock89/{{ .ProjectName }}:{{ .Tag}}-amd64" ]
+  - image_templates: [ "jackstock8904/{{ .ProjectName }}:{{ .Tag}}-amd64" ]
     goarch: amd64
     dockerfile: '{{ .Env.DOCKERFILE }}'
     use: buildx
