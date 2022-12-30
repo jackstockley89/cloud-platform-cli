@@ -43,7 +43,7 @@ jobs:
         with:
           flavor: latest=false
           images: jackstock8904/cloud-platform-cli
-          tags: type=semver,suffix=-nightly,value=${{ steps.version_check.outputs.release_tag }}
+          tags: type=semver,suffix=-nightly,pattern={{version}},value=${{ steps.version_check.outputs.release_tag }}
     
       - name: Build and push
         uses: docker/build-push-action@v3
