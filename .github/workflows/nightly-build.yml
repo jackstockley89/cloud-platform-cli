@@ -9,7 +9,25 @@ permissions:
   contents: write
 
 jobs:
+  check_date:
+    runs-on: ubuntu-latest
+    name: Check latest commit
+    outputs:
+      should_run: ${{ steps.should_run.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: print latest_commit
+        run: echo ${{ github.sha }}
+
+      - id: should_run
+        continue-on-error: true
+        name: check latest commit is less than a day
+        if: ${{ github.event_name == 'schedule' }}
+        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
+
   docker:
+    needs: check_date
+    if: ${{ needs.check_date.outputs.should_run != 'false' }}
     name: Build container and push to DockerHub
     runs-on: ubuntu-latest
     steps:
@@ -36,13 +54,21 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-            
+      
+      - name: Get Tags for Image
+        id: metadata
+        uses: docker/metadata-action@v4
+        with:
+          flavor: latest=false
+          images: jackstock8904/cloud-platform-cli
+          tags: type=semver,suffix=-nightly,pattern={{version}},value=${{ steps.version_check.outputs.release_tag }}
+    
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: jackstock8904/cloud-platform-cli:${{ steps.version_check.outputs.release_tag }}devel
+          tags: ${{ steps.metadata.outputs.tags }}
           build-args: CLOUD_PLATFORM_CLI_VERSION=${{ steps.version_check.outputs.release_tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
